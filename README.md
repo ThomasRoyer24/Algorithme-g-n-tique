@@ -34,6 +34,53 @@ Plutôt que de tester toutes les combinaisons possibles, nous utilisons différe
 
 ### 📥 Clonage du projet
 ```bash
-git clone https://github.com/ton-repo/tsp-solver.git
+git clone https://github.com/ThomasRoyer24/Algorithme-g-n-tique.git
 cd tsp-solver
 ```
+
+### 📦 Installation des dépendances
+```bash
+pip install -r requirements.txt
+```
+
+---
+
+## 🚀 Utilisation
+Lancer l'algorithme avec un jeu de données :
+```bash
+python main.py --input data/clients.json --algo genetic
+```
+Options disponibles pour `--algo` :
+- `bruteforce` → Résolution exacte (⚠️ très lent pour `n > 10`)
+- `heuristic` → Approche heuristique rapide
+- `ant_colony` → Colonies de fourmis 🐜
+- `genetic` → Algorithme génétique 🧬
+- `simulated_annealing` → Recuit simulé 🔥
+
+---
+
+## 📊 Résultats & Performances
+Le projet propose des visualisations des chemins optimaux avec Matplotlib et NetworkX. Les résultats peuvent être enregistrés sous forme de fichiers JSON ou affichés en temps réel.
+
+---
+
+## 🛠 Améliorations Futures
+- 🚀 Implémentation d'une **interface web interactive**.
+- 📡 Intégration d'une API FastAPI pour interagir avec le solveur.
+- ⚡ Optimisation des performances pour les grands ensembles de données.
+
+---
+
+## 🤝 Contribuer
+Les contributions sont les bienvenues ! Ouvrez une **issue** ou proposez une **pull request**. 🛠
+
+---
+
+## 📜 Licence
+Ce projet est sous licence MIT. Voir `LICENSE` pour plus d’informations.
+
+---
+
+## 📞 Contact
+💡 Un problème ou une suggestion ? Contacte-moi via GitHub ou en ouvrant une issue ! 🚀
+

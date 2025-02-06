@@ -1,0 +1,6 @@
+numpy
+random
+time
+pandas
+tkinter
+csv
