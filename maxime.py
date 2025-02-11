@@ -155,6 +155,84 @@ affichage.run()
 
 
 
+class TSP_GA:
+    def __init__(self):
+        self.population = []
+        self.graph = Graph()
+        self.graph.generer_lieux()
+        self.graph.calcul_matrice_cout_od()
+        self.taille_population = 5
+        self.nb_generations = 10000
+        self.prob_croisement = 0.8
+        self.prob_mutation = 0.05
+        self.ratio_selection = 0.7
+
+    def initialiser_population(self):
+        for _ in range(self.taille_population):
+            route = Route(None)
+            self.population.append(route)
+        print("Population initiale: ",self.population)
+
+
+    def selection(self):
+        # selection proportionnelle à l'adaptation
+        distances = []
+        total_distance = 0
+        for route in self.population:
+            distance = self.graph.calcul_distance_route(route)
+            distances.append(distance)
+            total_distance += distance
+        probas = [distance/total_distance for distance in distances]
+        return np.random.choice(self.population, int(self.ratio_selection*self.taille_population), p=probas).tolist()
+
+    def croisement(self, selectionnes):
+        enfants = []
+        for i in range(0, len(selectionnes)-1, 2):
+            parent1 = selectionnes[i]
+            parent2 = selectionnes[i+1]
+            cut = np.random.randint(1, NB_LIEUX-1)
+
+            enfant1 = Route(parent1.ordre[:cut] + [x for x in parent2.ordre if x not in parent1.ordre[:cut]] + [0])
+            enfant2 = Route(parent2.ordre[:cut] + [x for x in parent1.ordre if x not in parent2.ordre[:cut]] + [0])
+            enfants.append(enfant1)
+            enfants.append(enfant2)
+        return enfants
+
+    def mutation(self, enfants):
+        enfants_mutes = []
+        for enfant in enfants:
+            if np.random.rand() < self.prob_mutation:
+                villes_a_echanger = np.random.default_rng().choice(range(1, NB_LIEUX-1), size=2, replace=False)
+                enfant.ordre[villes_a_echanger[0]], enfant.ordre[villes_a_echanger[1]] = enfant.ordre[villes_a_echanger[1]], enfant.ordre[villes_a_echanger[0]]
+                enfants_mutes.append(enfant)
+        return enfants_mutes
+    
+    def evaluate(self):
+        best = np.inf
+        for individu in self.population:
+            if self.graph.calcul_distance_route(individu) < best:
+                best = self.graph.calcul_distance_route(individu)
+        print("Meilleure distance: ",best)
+
+    def run(self):
+        self.initialiser_population()
+        self.evaluate()
+        print("-----")
+        for i in range(self.nb_generations):
+            selectionnes = self.selection()
+            enfants = self.croisement(selectionnes)
+            enfants_mutes = self.mutation(enfants)
+            best_individuals = sorted(self.population, key=lambda x: self.graph.calcul_distance_route(x))[:int(self.ratio_selection * self.taille_population)]
+            new_individuals = selectionnes + enfants_mutes
+            self.population = best_individuals + new_individuals[:len(self.population) - len(best_individuals)]
+
+        self.evaluate()
+            
+
+solver = TSP_GA()
+solver.run()
+
+
 
 
 
