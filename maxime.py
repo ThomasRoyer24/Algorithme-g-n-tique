@@ -141,7 +141,7 @@ graph.calcul_matrice_cout_od()
 # print("Distance total:", graph.calcul_distance_route(route))
 
 # #test affichage
-# affichage = Affichage(graph)
+affichage = Affichage(graph)
 # best_route = Route(None)
 # print(best_route.ordre)
 # print("Distance total:", graph.calcul_distance_route(best_route))
