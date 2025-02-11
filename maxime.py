@@ -2,6 +2,7 @@ import numpy as np
 import pandas as pd
 import csv
 import tkinter as tk
+import random
 
 class Lieu:
     def __init__(self, x, y, nom):
@@ -14,7 +15,6 @@ class Lieu:
 
 LARGEUR = 800
 HAUTEUR = 600
-#NB_LIEUX = 5
 
 class Graph:
     def __init__(self):
@@ -59,7 +59,7 @@ class Graph:
             lieu_actuel = self.liste_lieux[route.ordre[i]]
             lieu_suivant = self.liste_lieux[route.ordre[i+1]]
             distance_totale += lieu_actuel.distance(lieu_suivant)
-            print("Distance entre",lieu_actuel.nom," et ",lieu_suivant.nom,": ",lieu_actuel.distance(lieu_suivant))
+            # print("Distance entre",lieu_actuel.nom," et ",lieu_suivant.nom,": ",lieu_actuel.distance(lieu_suivant))
         return distance_totale
     
 class Route:
@@ -84,37 +84,41 @@ class Affichage:
         self.window.title("Groupe G")
         self.canvas = tk.Canvas(self.window, width=LARGEUR, height=HAUTEUR)
         self.canvas.pack()
-        self.text = tk.Text(self.window)
-        self.text.pack()
+
+        self.label = tk.Label(self.window, text="Informations:")
+        self.label.pack()
 
         self.window.bind("<Key>", self.handle_key_press)
         self.window.bind("<Escape>", self.handle_escape)
 
+    def update_label(self, text):
+        self.label.config(text=text)
+        #self.text = tk.Text(self.window)
+        #self.text.pack()
+
     def handle_key_press(self, event):
-        if event.char == "N":
-            self.display_n_best_routes()
-        elif event.char == "M":
-            self.display_cost_matrix()
+        # if event.char == "N":
+        self.display_n_best_routes()
 
     def handle_escape(self, event):
         self.window.destroy()
 
-    def display_n_best_routes(self, n=5):
-        print("Test N")
-        best_routes = self.graph.find_n_best_routes(n)
-        for route in best_routes:
-            self.display_route(route, color="light gray")
+    def display_n_best_routes(self, population, n=5):
+        self.canvas.delete("route")
+        for route in population:
+            self.display_route(route, color="gray")
 
-    def display_cost_matrix(self):
-        cost_matrix = self.graph.get_cost_matrix()
-        self.text.insert(tk.END, str(cost_matrix))
-
-    def display_route(self, route, color="blue"):
+    def display_route(self, route, color, mini=False):
         for i in range(len(route.ordre) - 1):
             lieu_actuel = self.graph.liste_lieux[route.ordre[i]]
             lieu_suivant = self.graph.liste_lieux[route.ordre[i + 1]]
-            self.canvas.create_line(lieu_actuel.x, lieu_actuel.y, lieu_suivant.x, lieu_suivant.y, fill=color, dash=(4, 4))
-            self.canvas.create_text(lieu_actuel.x, lieu_actuel.y, text=str(i), fill=color)
+
+            if mini:
+                self.canvas.delete("route_mini")
+                self.canvas.create_line(lieu_actuel.x, lieu_actuel.y, lieu_suivant.x, lieu_suivant.y, fill="blue", tag="route_mini",width=5)
+            else:
+                self.canvas.create_line(lieu_actuel.x, lieu_actuel.y, lieu_suivant.x, lieu_suivant.y, fill=color, dash=(4, 4), tag="route")
+            #self.canvas.create_text(lieu_actuel.x, lieu_actuel.y, text=str(i), fill=color, tag="route")
 
     def run(self):
         self.window.mainloop()
@@ -123,34 +127,53 @@ class Affichage:
 #test
 graph = Graph()
 NB_LIEUX = graph.generer_lieux(path='data/graph_5.csv')
-print("NB_lieux : ",NB_LIEUX)
+# print("NB_lieux : ",NB_LIEUX)
 graph.calcul_matrice_cout_od()
-print("Matrice od : \n",graph.matrice_od)
+# print("Matrice od : \n",graph.matrice_od)
 
 #test du plus proche voisin
-lieu = graph.liste_lieux[1]
-plus_proche = graph.plus_proche_voisin(lieu)
-print("Le lieu: ",lieu.nom," a pour voisin le plus proche: ",plus_proche.nom)
+# lieu = graph.liste_lieux[1]
+# plus_proche = graph.plus_proche_voisin(lieu)
+# print("Le lieu: ",lieu.nom," a pour voisin le plus proche: ",plus_proche.nom)
 
-# calcul la total distance
-route = Route([0, 3 ,1 ,4 ,2, 0])
-print("Distance total:", graph.calcul_distance_route(route))
+# # calcul la total distance
+# route = Route([0, 3 ,1 ,4 ,2, 0])
+# print("Distance total:", graph.calcul_distance_route(route))
 
-#test affichage
-affichage = Affichage(graph)
-best_route = Route(None)
-print(best_route.ordre)
-print("Distance total:", graph.calcul_distance_route(best_route))
-best_route = Route(None)
-print(best_route.ordre)
-print("Distance total:", graph.calcul_distance_route(best_route))
-best_route = Route(None)
-print(best_route.ordre)
-print("Distance total:", graph.calcul_distance_route(best_route))
-best_route = Route(None)
-print(best_route.ordre)
-print("Distance total:", graph.calcul_distance_route(best_route))
-affichage.display_route(best_route)
+# #test affichage
+# affichage = Affichage(graph)
+# best_route = Route(None)
+# print(best_route.ordre)
+# print("Distance total:", graph.calcul_distance_route(best_route))
+# best_route = Route(None)
+# print(best_route.ordre)
+# print("Distance total:", graph.calcul_distance_route(best_route))
+
+# main
+nb_population = 5
+nb_iterations = 1000
+population = list(Route(None) for _ in range(nb_population))
+
+
+affichage.display_n_best_routes(population)
+indice_minimum_distance = random.randint(0, nb_population-1)
+affichage.display_route(route=population[indice_minimum_distance], color="blue", mini=True)
+
+for i in range(nb_iterations):
+
+    # algo alex
+    # population = new_population ??
+    population = list(Route(None) for _ in range(nb_population))
+    indice_minimum_distance = random.randint(0, nb_population-1)
+
+    affichage.display_route(route=population[indice_minimum_distance], color="blue", mini=True)
+    print(population[indice_minimum_distance])
+    affichage.display_n_best_routes(population)
+    affichage.update_label("Iteration: " + str(i) + " Meilleur distance trouvée : " + str(graph.calcul_distance_route(population[indice_minimum_distance])))
+
+    affichage.window.update_idletasks()
+    affichage.window.update()
+
 affichage.run()
 
 
@@ -229,8 +252,8 @@ class TSP_GA:
         self.evaluate()
             
 
-solver = TSP_GA()
-solver.run()
+#solver = TSP_GA()
+#solver.run()
 
 
 
