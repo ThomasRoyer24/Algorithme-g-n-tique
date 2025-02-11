@@ -105,12 +105,19 @@ class TSP_GA:
         # return np.random.choice(self.population, int(self.ratio_selection*self.taille_population), p=probas).tolist()
 
         # selection par tournoi
-        selectionnes = []
-        for _ in range(int(self.ratio_selection * self.taille_population)):
-            tournoi = np.random.choice(self.population, 3)  # Sélection de 3 individus
-            meilleur_individu = min(tournoi, key=lambda x: self.graph.calcul_distance_route(x))
-            selectionnes.append(meilleur_individu)
-        return selectionnes
+        # selectionnes = []
+        # for _ in range(int(self.ratio_selection * self.taille_population)):
+        #     tournoi = np.random.choice(self.population, 3)  # Sélection de 3 individus
+        #     meilleur_individu = min(tournoi, key=lambda x: self.graph.calcul_distance_route(x))
+        #     selectionnes.append(meilleur_individu)
+        # return selectionnes
+        
+        dist = []
+        for route in self.population:
+            dist.append(self.graph.calcul_distance_route(route))
+            dist.sort()
+        return dist[:int(self.ratio_selection*self.taille_population)]
+
 
     def croisement(self, parent1, parent2):
         enfants = []
