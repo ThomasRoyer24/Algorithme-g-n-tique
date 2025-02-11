@@ -69,6 +69,7 @@ class Route:
             # ajouter 0 en première et dernière position
             self.ordre = np.insert(self.ordre, 0, 0)
             self.ordre = np.append(self.ordre, 0)
+            self.ordre = self.ordre.tolist()
         else:
             if ordre[0] != 0 or ordre[-1] != 0:
                 raise ValueError("L'ordre doit commencer et finir par 0")
