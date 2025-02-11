@@ -114,9 +114,10 @@ class TSP_GA:
         
         dist = []
         for route in self.population:
-            dist.append(self.graph.calcul_distance_route(route))
-            dist.sort()
-        return dist[:int(self.ratio_selection*self.taille_population)]
+            dist.append((route, self.graph.calcul_distance_route(route)))
+        dist.sort(key=lambda x: x[1])
+        selected_routes = [route for route, _ in dist[:int(self.ratio_selection * self.taille_population)]]
+        return selected_routes
 
 
     def croisement(self, parent1, parent2):
