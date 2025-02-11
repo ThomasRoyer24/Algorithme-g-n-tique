@@ -14,17 +14,17 @@ class Lieu:
 
 LARGEUR = 800
 HAUTEUR = 600
-NB_LIEUX = 5
+#NB_LIEUX = 5
 
 class Graph:
     def __init__(self):
         self.liste_lieux = []
         self.matrice_od = None
 
-    def generer_lieux(self):
-        # read csv
+    def generer_lieux(self,path):
+        print("Lieux: ")
         # it has this form : first line is x,y 
-        with open('data/graph_5.csv', 'r') as file:
+        with open(path, 'r') as file:
             reader = csv.reader(file) # pas la premiere ligne
             next(reader)
             count = 0
@@ -35,6 +35,7 @@ class Graph:
                 lieu = Lieu(x, y, "nom"+str(count))
                 count +=1
                 self.liste_lieux.append(lieu)
+        return count
 
     def calcul_matrice_cout_od(self):
 
@@ -98,6 +99,7 @@ class Affichage:
         self.window.destroy()
 
     def display_n_best_routes(self, n=5):
+        print("Test N")
         best_routes = self.graph.find_n_best_routes(n)
         for route in best_routes:
             self.display_route(route, color="light gray")
@@ -119,9 +121,10 @@ class Affichage:
 
 #test
 graph = Graph()
-graph.generer_lieux()
+NB_LIEUX = graph.generer_lieux(path='data/graph_5.csv')
+print("NB_lieux : ",NB_LIEUX)
 graph.calcul_matrice_cout_od()
-print((graph.matrice_od))
+print("Matrice od : \n",graph.matrice_od)
 
 #test du plus proche voisin
 lieu = graph.liste_lieux[1]
@@ -133,9 +136,21 @@ route = Route([0, 3 ,1 ,4 ,2, 0])
 print("Distance total:", graph.calcul_distance_route(route))
 
 #test affichage
-#affichage = Affichage(graph)
-#affichage.display_route(route)
-#affichage.run()
+affichage = Affichage(graph)
+best_route = Route(None)
+print(best_route.ordre)
+print("Distance total:", graph.calcul_distance_route(best_route))
+best_route = Route(None)
+print(best_route.ordre)
+print("Distance total:", graph.calcul_distance_route(best_route))
+best_route = Route(None)
+print(best_route.ordre)
+print("Distance total:", graph.calcul_distance_route(best_route))
+best_route = Route(None)
+print(best_route.ordre)
+print("Distance total:", graph.calcul_distance_route(best_route))
+affichage.display_route(best_route)
+affichage.run()
 
 
 
