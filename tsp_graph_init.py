@@ -40,7 +40,7 @@ class Graph:
         self.matrice_od = np.zeros((NB_LIEUX, NB_LIEUX))
         dictionnaire = {}
         for i in range(NB_LIEUX):
-            for j in range(i, NB_LIEUX):
+            for j in range(i+1, NB_LIEUX):
                 dist_ij = self.liste_lieux[i].distance(self.liste_lieux[j])
                 self.matrice_od[i, j] = dist_ij                
 
@@ -138,35 +138,77 @@ class TSP_GA:
         # print(f"Indice de l'individu avec la plus petite distance: {best_index}")
         return best_index
 
-    def run(self,population):
-        self.population = population[:]
-        # print(self.population)
+    def check_doublons(self,population):
+        seen = set()
+        doublons = []
+        for route in population:
+            route_repr = tuple(route.ordre)  # Assurez-vous que route.ordre est une séquence immuable
+            if route_repr in seen:
+                doublons.append(route)
+            else:
+                seen.add(route_repr)
+        return doublons
+
+    def test2(self,selectionnes):
+        i=0
         nouvelle_population = []
-        dist = []
-        for route in self.population:
-            dist.append((route, self.graph.calcul_distance_route(route)))
-            dist.sort(key=lambda x: x[1])
-            selectionnes = [route for route, _ in dist[:int(self.ratio_selection * self.taille_population)]]
-            restants = [route for route, _ in dist[int(self.ratio_selection * self.taille_population):]]
-            
-        # print("Selectionnes: ",len(selectionnes))
-        # print("Restants: ",len(restants))
-        for j in range(0, len(selectionnes)-1, 2):
+        while len(nouvelle_population) < self.taille_population:
+            # print(i)
+            # random.shuffle(selectionnes)
             if np.random.rand() < self.prob_croisement:
-                enfants = self.croisement(selectionnes[j], selectionnes[j+1])
+                enfants = self.croisement(selectionnes[i], selectionnes[i+1])
                 for enfant in enfants:
                     if np.random.rand() < self.prob_mutation:
                         enfant = self.mutation(enfant)
                     nouvelle_population.append(enfant)
             else:
-                nouvelle_population.append(selectionnes[j])
-                nouvelle_population.append(selectionnes[j+1])
+                pass
+                # nouvelle_population.append(selectionnes[i])
+                # nouvelle_population.append(selectionnes[i+1])
+            # print("Nouvelle population: ",len(nouvelle_population))
+            i += 2
+            if i == len(selectionnes)-2:
+                i = 0
+        return nouvelle_population
+
+    def run(self,population):
+
+        self.population = population
+        dist = []
+        doublons = [1]
+
+        for route in self.population:
+            dist.append((route, self.graph.calcul_distance_route(route)))
+            dist.sort(key=lambda x: x[1])
+            selectionnes = [route for route, _ in dist[:int(self.ratio_selection * self.taille_population)]]
+            # restants = [route for route, _ in dist[int(self.ratio_selection * self.taille_population):]]
+        
+        # while(len(doublons)>0):
+        nouvelle_population = self.test2(selectionnes)
+        doublons = self.check_doublons(nouvelle_population)
+        print("Doublons: ",len(doublons)," sur ",len(nouvelle_population))
+
+        # print("Selectionnes: ",len(selectionnes))
+        # print("Restants: ",len(restants))
+        # for j in range(0, len(selectionnes)-1, 2):
+        #     if np.random.rand() < self.prob_croisement:
+        #         enfants = self.croisement(selectionnes[j], selectionnes[j+1])
+        #         for enfant in enfants:
+        #             if np.random.rand() < self.prob_mutation:
+        #                 enfant = self.mutation(enfant)
+        #             nouvelle_population.append(enfant)
+        #     else:
+        #         nouvelle_population.append(selectionnes[j])
+        #         nouvelle_population.append(selectionnes[j+1])
         # print(len(nouvelle_population))
 
-        for reste in restants:
-            nouvelle_population.append(reste)
+        # for reste in restants:
+        #     nouvelle_population.append(reste)
 
-        self.population = nouvelle_population[:]
+        # doublons = self.check_doublons(population)
+        # print("Doublons: ",len(doublons)," sur ",len(population))
+
+        self.population = nouvelle_population
         # print("Population: ",len(self.population))
         return self.population, self.test()
 
@@ -236,7 +278,7 @@ class Affichage:
 LARGEUR = 800
 HAUTEUR = 600
 graph = Graph()
-NB_LIEUX = graph.generer_lieux(path='data/graph_20.csv')
+NB_LIEUX = graph.generer_lieux(path='data/graph_5.csv')
 graph.calcul_matrice_cout_od()
 affichage = Affichage(graph)
 nb_iterations = 2000
@@ -244,7 +286,11 @@ nb_iterations = 2000
 nb_population = 1000
 
 population = [Route(None) for _ in range(nb_population)]
-solver = TSP_GA(graph, taille_population=nb_population, prob_mutation=0.1, prob_croisement=0.8, ratio_selection=0.7)
+# check doublons dans la population
+
+
+
+solver = TSP_GA(graph, taille_population=nb_population, prob_mutation=0.5, prob_croisement=0.5, ratio_selection=0.4)
 min = np.inf
 for i in range(nb_iterations):
 
