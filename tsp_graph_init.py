@@ -276,12 +276,13 @@ class Affichage:
 LARGEUR = 800
 HAUTEUR = 600
 graph = Graph()
-NB_LIEUX = graph.generer_lieux(path='data/graph_200.csv')
+NB_LIEUX = graph.generer_lieux(path='data/graph_20.csv')
 graph.calcul_matrice_cout_od()
 affichage = Affichage(graph)
 
 nb_iterations = 2000
-nb_population = NB_LIEUX*5
+nb_population = NB_LIEUX*int(np.log(NB_LIEUX)*2)
+print(nb_population)
 n_route = 100
 
 solver = TSP_GA(graph, taille_population=nb_population, prob_mutation=0.2, prob_croisement=0.5, ratio_selection=0.3,n_meilleurs = n_route)
