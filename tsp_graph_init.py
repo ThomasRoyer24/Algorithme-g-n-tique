@@ -38,7 +38,6 @@ class Graph:
 
         # optimiser car on calcule 2 fois la meme distance
         self.matrice_od = np.zeros((NB_LIEUX, NB_LIEUX))
-        dictionnaire = {}
         for i in range(NB_LIEUX):
             for j in range(i+1, NB_LIEUX):
                 dist_ij = self.liste_lieux[i].distance(self.liste_lieux[j])
@@ -74,42 +73,24 @@ class Route:
             self.ordre = ordre[:]
     
 class TSP_GA:
-    def __init__(self, graph, taille_population=50, prob_croisement=0.8, prob_mutation=0.05, ratio_selection=0.7):
+    def __init__(self, graph, taille_population=50, prob_croisement=0.8, prob_mutation=0.05, ratio_selection=0.7, n_meilleurs=5):
         self.population = []
         self.graph = graph
         self.taille_population = taille_population
         self.prob_croisement = prob_croisement
         self.prob_mutation = prob_mutation
         self.ratio_selection = ratio_selection
+        self.n_meilleurs = n_meilleurs        
 
     def selection(self):
-        # selection proportionnelle à l'adaptation
-        # distances = []
-        # for route in self.population:
-        #     distance = self.graph.calcul_distance_route(route)
-        #     distances.append(distance)
-        # # probas = [distance/total_distance for distance in distances]
-        # probas = [1 / distance for distance in distances]
-        # total_prob = sum(probas)
-        # probas = [p / total_prob for p in probas]
-        # return np.random.choice(self.population, int(self.ratio_selection*self.taille_population), p=probas).tolist()
-
-        # selection par tournoi
-        # selectionnes = []
-        # for _ in range(int(self.ratio_selection * self.taille_population)):
-        #     tournoi = np.random.choice(self.population, 3)  # Sélection de 3 individus
-        #     meilleur_individu = min(tournoi, key=lambda x: self.graph.calcul_distance_route(x))
-        #     selectionnes.append(meilleur_individu)
-        # return selectionnes
         dist = []
         for route in self.population:
             dist.append((route, self.graph.calcul_distance_route(route)))
-        dist.sort(key=lambda x: x[1])
-        # print('Test',dist)
-        selected_routes = [route for route, _ in dist[:int(self.ratio_selection * self.taille_population)]]
-        # for route in selected_routes:
-            # print('Selected routes',route.ordre, self.graph.calcul_distance_route(route))
-        return selected_routes
+            dist.sort(key=lambda x: x[1])
+            selectionnes = [route for route, _ in dist[:int(self.ratio_selection * self.taille_population)]]
+            # restants = [route for route, _ in dist[int(self.ratio_selection * self.taille_population):]]
+        
+        return selectionnes
 
 
     def croisement(self, parent1, parent2):
@@ -120,10 +101,6 @@ class TSP_GA:
         
         enfants.append(enfant1)
         enfants.append(enfant2)
-        # print("P1 : ",parent1.ordre,sum(parent1.ordre),graph.calcul_distance_route(parent1))
-        # print("P2 : ",parent2.ordre,sum(parent2.ordre),graph.calcul_distance_route(parent2))
-        # print("E1 : ",enfant1.ordre,sum(enfant1.ordre),graph.calcul_distance_route(enfant1))
-        # print("E2 : ",enfant2.ordre,sum(enfant2.ordre),graph.calcul_distance_route(enfant2))
         return enfants
 
     def mutation(self, enfant):       
@@ -131,12 +108,13 @@ class TSP_GA:
         enfant.ordre[villes_a_echanger[0]], enfant.ordre[villes_a_echanger[1]] = enfant.ordre[villes_a_echanger[1]], enfant.ordre[villes_a_echanger[0]]
         return enfant
     
-    def test(self):
+    def meilleures_routes(self):
         a = [self.graph.calcul_distance_route(route) for route in self.population]
-        # print(a)
-        best_index = np.argmin(a)
+        indexed_distances = list(enumerate(a))
+        indexed_distances.sort(key=lambda x: x[1])
         # print(f"Indice de l'individu avec la plus petite distance: {best_index}")
-        return best_index
+        return  [index for index, distance in indexed_distances[:self.n_meilleurs]]
+
 
     def check_doublons(self,population):
         seen = set()
@@ -149,7 +127,17 @@ class TSP_GA:
                 seen.add(route_repr)
         return doublons
 
-    def test2(self,selectionnes):
+    def remove_doublons2(self, population):
+        seen = set()
+        unique_population = []
+        for route in population:
+            route_repr = tuple(route.ordre)  # Assurez-vous que route.ordre est une séquence immuable
+            if route_repr not in seen:
+                seen.add(route_repr)
+                unique_population.append(route)
+        return unique_population
+
+    def iteration(self,selectionnes):
         i=0
         nouvelle_population = []
         while len(nouvelle_population) < self.taille_population:
@@ -165,52 +153,66 @@ class TSP_GA:
                 pass
                 # nouvelle_population.append(selectionnes[i])
                 # nouvelle_population.append(selectionnes[i+1])
-            # print("Nouvelle population: ",len(nouvelle_population))
             i += 2
             if i == len(selectionnes)-2:
                 i = 0
         return nouvelle_population
 
-    def run(self,population):
-
-        self.population = population
-        dist = []
-        doublons = [1]
-
-        for route in self.population:
-            dist.append((route, self.graph.calcul_distance_route(route)))
-            dist.sort(key=lambda x: x[1])
-            selectionnes = [route for route, _ in dist[:int(self.ratio_selection * self.taille_population)]]
-            # restants = [route for route, _ in dist[int(self.ratio_selection * self.taille_population):]]
+    def execute(self):
         
-        # while(len(doublons)>0):
-        nouvelle_population = self.test2(selectionnes)
+        # self.population = population
+        doublons = [1]
+        selectionnes = self.selection()
+        unique = []
+
+        nouvelle_population = self.iteration(selectionnes)
         doublons = self.check_doublons(nouvelle_population)
-        print("Doublons: ",len(doublons)," sur ",len(nouvelle_population))
+        # print("Doublons avant: ",len(doublons)," sur ",len(nouvelle_population))
+        population_intermediaire = [Route(None) for _ in range(len(doublons))]
+        # print(len(self.check_doublons(population_intermediaire)))
 
-        # print("Selectionnes: ",len(selectionnes))
-        # print("Restants: ",len(restants))
-        # for j in range(0, len(selectionnes)-1, 2):
-        #     if np.random.rand() < self.prob_croisement:
-        #         enfants = self.croisement(selectionnes[j], selectionnes[j+1])
-        #         for enfant in enfants:
-        #             if np.random.rand() < self.prob_mutation:
-        #                 enfant = self.mutation(enfant)
-        #             nouvelle_population.append(enfant)
-        #     else:
-        #         nouvelle_population.append(selectionnes[j])
-        #         nouvelle_population.append(selectionnes[j+1])
-        # print(len(nouvelle_population))
+        unique = self.remove_doublons2(nouvelle_population)
+        unique += population_intermediaire
 
-        # for reste in restants:
-        #     nouvelle_population.append(reste)
+        nouvelle_population = unique
+        doublons = self.check_doublons(nouvelle_population)
+        # print("Doublons apres: ",len(doublons)," sur ",len(nouvelle_population))
+        # print("Nouvelle population: ",len(nouvelle_population))
+        return nouvelle_population, self.meilleures_routes()
 
-        # doublons = self.check_doublons(population)
-        # print("Doublons: ",len(doublons)," sur ",len(population))
+    def run(self):
 
-        self.population = nouvelle_population
-        # print("Population: ",len(self.population))
-        return self.population, self.test()
+        min = np.inf
+        self.population = [Route(None) for _ in range(nb_population)]
+        for i in range(nb_iterations):
+
+            while affichage.paused:
+                affichage.window.update_idletasks()
+                affichage.window.update()
+
+            self.population, info_dist = self.execute()
+
+            if graph.calcul_distance_route(self.population[info_dist[0]]) < min:
+                c = 0
+                min = graph.calcul_distance_route(self.population[info_dist[0]])
+                min_route = self.population[info_dist[0]]
+            elif(graph.calcul_distance_route(self.population[info_dist[0]]) == min):
+                c += 1
+            if(c==int(0.02*nb_iterations)):
+                affichage.window.destroy()
+                return min_route, min
+
+            affichage.display_route(min_route, color="blue", mini=True)
+            affichage.display_n_best_routes(self.population, info_dist, n_route = 5)
+            affichage.update_label("Iteration: " + str(i) + " Meilleure distance trouvée : " + str(graph.calcul_distance_route(self.population[info_dist[0]]))+"Minimum all time: "+str(min))
+
+            affichage.window.update_idletasks()
+            affichage.window.update()
+
+        affichage.run()
+
+        return min_route, min
+        # self.population = nouvelle_population
 
 
 class Affichage:
@@ -238,24 +240,21 @@ class Affichage:
 
     def update_label(self, text):
         self.label.config(text=text)
-        #self.text = tk.Text(self.window)
-        #self.text.pack()
 
     def toggle_pause(self, event):
         self.paused = not self.paused
 
     def handle_key_press(self, event):
-        # if event.char == "N":
         self.display_n_best_routes()
 
     def handle_escape(self, event):
         self.window.destroy()
 
-    def display_n_best_routes(self, population, n=5):
+    def display_n_best_routes(self, population, indice, n_route=5):
         if self.show_best_routes:
             self.canvas.delete("route")
-            for route in population:
-                self.display_route(route, color="gray")
+            for i in range(n_route):
+                self.display_route(population[indice[i]], color="gray")
 
     def display_route(self, route, color, mini=False):
         if mini:
@@ -269,7 +268,6 @@ class Affichage:
                 self.canvas.create_line(lieu_actuel.x, lieu_actuel.y, lieu_suivant.x, lieu_suivant.y, fill="blue", tag="route_mini",width=5)
             else:
                 self.canvas.create_line(lieu_actuel.x, lieu_actuel.y, lieu_suivant.x, lieu_suivant.y, fill=color, dash=(4, 4), tag="route")
-            #self.canvas.create_text(lieu_actuel.x, lieu_actuel.y, text=str(i), fill=color, tag="route")
 
     def run(self):
         self.window.mainloop()
@@ -278,38 +276,14 @@ class Affichage:
 LARGEUR = 800
 HAUTEUR = 600
 graph = Graph()
-NB_LIEUX = graph.generer_lieux(path='data/graph_5.csv')
+NB_LIEUX = graph.generer_lieux(path='data/graph_200.csv')
 graph.calcul_matrice_cout_od()
 affichage = Affichage(graph)
+
 nb_iterations = 2000
+nb_population = NB_LIEUX*5
+n_route = 100
 
-nb_population = 1000
-
-population = [Route(None) for _ in range(nb_population)]
-# check doublons dans la population
-
-
-
-solver = TSP_GA(graph, taille_population=nb_population, prob_mutation=0.5, prob_croisement=0.5, ratio_selection=0.4)
-min = np.inf
-for i in range(nb_iterations):
-
-    while affichage.paused:
-        affichage.window.update_idletasks()
-        affichage.window.update()
-
-    population, info_dist = solver.run(population)
-    # print(info_dist)
-
-    if graph.calcul_distance_route(population[info_dist]) < min:
-        min = graph.calcul_distance_route(population[info_dist])
-        min_route = population[info_dist]
-        # print("Nouveau minimum: ",min)
-    affichage.display_route(route=population[info_dist], color="blue", mini=True)
-    affichage.display_n_best_routes(population)
-    affichage.update_label("Iteration: " + str(i) + " Meilleur distance trouvée : " + str(graph.calcul_distance_route(population[info_dist]))+"Minimum: "+str(min))
-
-    affichage.window.update_idletasks()
-    affichage.window.update()
-
-affichage.run()
+solver = TSP_GA(graph, taille_population=nb_population, prob_mutation=0.2, prob_croisement=0.5, ratio_selection=0.3,n_meilleurs = n_route)
+min_route, min = solver.run()
+print("Meilleure route trouvée: ",min_route.ordre, "Distance: ",min)
