@@ -86,9 +86,9 @@ class TSP_GA:
         dist = []
         for route in self.population:
             dist.append((route, self.graph.calcul_distance_route(route)))
-            dist.sort(key=lambda x: x[1])
-            selectionnes = [route for route, _ in dist[:int(self.ratio_selection * self.taille_population)]]
-            # restants = [route for route, _ in dist[int(self.ratio_selection * self.taille_population):]]
+        dist.sort(key=lambda x: x[1])
+        selectionnes = [route for route, _ in dist[:int(self.ratio_selection * self.taille_population)]]
+        # restants = [route for route, _ in dist[int(self.ratio_selection * self.taille_population):]]
         
         return selectionnes
 
