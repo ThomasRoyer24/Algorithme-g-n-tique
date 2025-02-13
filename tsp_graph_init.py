@@ -3,6 +3,7 @@ import pandas as pd
 import csv
 import tkinter as tk
 import random
+import time
 
 class Lieu:
     def __init__(self, x, y, nom):
@@ -18,9 +19,8 @@ class Graph:
         self.liste_lieux = []
         self.matrice_od = None
 
-    def generer_lieux(self,path):
+    def generer_lieux(self,path): # O(n_lieux)
         print("Lieux: ")
-        # it has this form : first line is x,y 
         with open(path, 'r') as file:
             reader = csv.reader(file) # pas la premiere ligne
             next(reader)
@@ -35,8 +35,6 @@ class Graph:
         return count
 
     def calcul_matrice_cout_od(self):
-
-        # optimiser car on calcule 2 fois la meme distance
         self.matrice_od = np.zeros((NB_LIEUX, NB_LIEUX))
         for i in range(NB_LIEUX):
             for j in range(i+1, NB_LIEUX):
@@ -55,21 +53,18 @@ class Graph:
             lieu_actuel = self.liste_lieux[route.ordre[i]]
             lieu_suivant = self.liste_lieux[route.ordre[i+1]]
             distance_totale += lieu_actuel.distance(lieu_suivant)
-            # print("Distance entre",lieu_actuel.nom," et ",lieu_suivant.nom,": ",lieu_actuel.distance(lieu_suivant))
         return distance_totale
     
 class Route:
     def __init__(self, ordre):
         if ordre is None:
-            self.ordre = np.random.permutation(range(1, NB_LIEUX)) # ou sample ou shuffle
-            # ajouter 0 en première et dernière position
+            self.ordre = np.random.permutation(range(1, NB_LIEUX))
             self.ordre = np.insert(self.ordre, 0, 0)
             self.ordre = np.append(self.ordre, 0)
             self.ordre = self.ordre.tolist()
         else:
             if ordre[0] != 0 or ordre[-1] != 0:
                 raise ValueError("L'ordre doit commencer et finir par 0")
-            # faire une copy plutot
             self.ordre = ordre[:]
     
 class TSP_GA:
@@ -88,7 +83,6 @@ class TSP_GA:
             dist.append((route, self.graph.calcul_distance_route(route)))
         dist.sort(key=lambda x: x[1])
         selectionnes = [route for route, _ in dist[:int(self.ratio_selection * self.taille_population)]]
-        # restants = [route for route, _ in dist[int(self.ratio_selection * self.taille_population):]]
         
         return selectionnes
 
@@ -112,7 +106,6 @@ class TSP_GA:
         a = [self.graph.calcul_distance_route(route) for route in self.population]
         indexed_distances = list(enumerate(a))
         indexed_distances.sort(key=lambda x: x[1])
-        # print(f"Indice de l'individu avec la plus petite distance: {best_index}")
         return  [index for index, distance in indexed_distances[:self.n_meilleurs]]
 
 
@@ -120,7 +113,7 @@ class TSP_GA:
         seen = set()
         doublons = []
         for route in population:
-            route_repr = tuple(route.ordre)  # Assurez-vous que route.ordre est une séquence immuable
+            route_repr = tuple(route.ordre)
             if route_repr in seen:
                 doublons.append(route)
             else:
@@ -131,7 +124,7 @@ class TSP_GA:
         seen = set()
         unique_population = []
         for route in population:
-            route_repr = tuple(route.ordre)  # Assurez-vous que route.ordre est une séquence immuable
+            route_repr = tuple(route.ordre)
             if route_repr not in seen:
                 seen.add(route_repr)
                 unique_population.append(route)
@@ -141,8 +134,6 @@ class TSP_GA:
         i=0
         nouvelle_population = []
         while len(nouvelle_population) < self.taille_population:
-            # print(i)
-            # random.shuffle(selectionnes)
             if np.random.rand() < self.prob_croisement:
                 enfants = self.croisement(selectionnes[i], selectionnes[i+1])
                 for enfant in enfants:
@@ -160,30 +151,43 @@ class TSP_GA:
 
     def execute(self):
         
-        # self.population = population
         doublons = [1]
         selectionnes = self.selection()
         unique = []
 
         nouvelle_population = self.iteration(selectionnes)
         doublons = self.check_doublons(nouvelle_population)
-        # print("Doublons avant: ",len(doublons)," sur ",len(nouvelle_population))
         population_intermediaire = [Route(None) for _ in range(len(doublons))]
-        # print(len(self.check_doublons(population_intermediaire)))
 
         unique = self.remove_doublons2(nouvelle_population)
         unique += population_intermediaire
 
         nouvelle_population = unique
         doublons = self.check_doublons(nouvelle_population)
-        # print("Doublons apres: ",len(doublons)," sur ",len(nouvelle_population))
-        # print("Nouvelle population: ",len(nouvelle_population))
         return nouvelle_population, self.meilleures_routes()
 
     def run(self):
 
-        min = np.inf
-        self.population = [Route(None) for _ in range(nb_population)]
+        min_fin = np.inf
+
+        population = []
+        for _ in range(nb_population): # O(n_pop)
+            start = np.random.randint(1, NB_LIEUX)
+            ordre = [0, start]
+            non_visites = set(range(1, NB_LIEUX)) - {start}
+            while non_visites: # O(n_lieux)
+                dernier = ordre[-1]
+                plus_proche = min(non_visites, key=lambda x: self.graph.matrice_od[dernier][x])
+                ordre.append(plus_proche)
+                non_visites.remove(plus_proche)
+            
+            ordre.append(0)
+            population.append(Route(ordre))
+
+        self.population = population
+
+
+
         for i in range(nb_iterations):
 
             while affichage.paused:
@@ -192,27 +196,26 @@ class TSP_GA:
 
             self.population, info_dist = self.execute()
 
-            if graph.calcul_distance_route(self.population[info_dist[0]]) < min:
+            if graph.calcul_distance_route(self.population[info_dist[0]]) < min_fin:
                 c = 0
-                min = graph.calcul_distance_route(self.population[info_dist[0]])
+                min_fin = graph.calcul_distance_route(self.population[info_dist[0]])
                 min_route = self.population[info_dist[0]]
-            elif(graph.calcul_distance_route(self.population[info_dist[0]]) == min):
+            elif(graph.calcul_distance_route(self.population[info_dist[0]]) == min_fin):
                 c += 1
-            if(c==int(0.02*nb_iterations)):
+            if(c==50):
                 affichage.window.destroy()
-                return min_route, min
+                return min_route, min_fin
 
             affichage.display_route(min_route, color="blue", mini=True)
             affichage.display_n_best_routes(self.population, info_dist, n_route = 5)
-            affichage.update_label("Iteration: " + str(i) + " Meilleure distance trouvée : " + str(graph.calcul_distance_route(self.population[info_dist[0]]))+"Minimum all time: "+str(min))
+            affichage.update_label("Iteration: " + str(i) + " Meilleure distance trouvée : " + str(graph.calcul_distance_route(self.population[info_dist[0]]))+"Minimum all time: "+str(min_fin))
 
             affichage.window.update_idletasks()
             affichage.window.update()
 
         affichage.run()
 
-        return min_route, min
-        # self.population = nouvelle_population
+        return min_route, min_fin
 
 
 class Affichage:
@@ -280,11 +283,14 @@ NB_LIEUX = graph.generer_lieux(path='data/graph_20.csv')
 graph.calcul_matrice_cout_od()
 affichage = Affichage(graph)
 
-nb_iterations = 2000
-nb_population = NB_LIEUX*int(np.log(NB_LIEUX)*2)
+nb_iterations = 20000
+nb_population = NB_LIEUX*int(np.log(NB_LIEUX))
 print(nb_population)
 n_route = 100
 
-solver = TSP_GA(graph, taille_population=nb_population, prob_mutation=0.2, prob_croisement=0.5, ratio_selection=0.3,n_meilleurs = n_route)
+start = time.time()
+solver = TSP_GA(graph, taille_population=nb_population, prob_mutation=0.3, prob_croisement=0.5, ratio_selection=0.3,n_meilleurs = n_route)
 min_route, min = solver.run()
+end = time.time()
 print("Meilleure route trouvée: ",min_route.ordre, "Distance: ",min)
+print(f"Temps d'exécution {end -start} secondes")
