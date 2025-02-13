@@ -204,7 +204,7 @@ class TSP_GA:
                 c += 1
             if(c==50):
                 affichage.window.destroy()
-                return min_route, min_fin
+                return min_route, min_fin, i
 
             affichage.display_route(min_route, color="blue", mini=True)
             affichage.display_n_best_routes(self.population, info_dist, n_route = 5)
@@ -215,7 +215,7 @@ class TSP_GA:
 
         affichage.run()
 
-        return min_route, min_fin
+        return min_route, min_fin, nb_iterations
 
 
 class Affichage:
@@ -289,8 +289,8 @@ print(nb_population)
 n_route = 100
 
 start = time.time()
-solver = TSP_GA(graph, taille_population=nb_population, prob_mutation=0.3, prob_croisement=0.5, ratio_selection=0.3,n_meilleurs = n_route)
-min_route, min = solver.run()
+solver = TSP_GA(graph, taille_population=nb_population, prob_mutation=0.4, prob_croisement=0.5, ratio_selection=0.3,n_meilleurs = n_route)
+min_route, min, iteration = solver.run()
 end = time.time()
-print("Meilleure route trouvée: ",min_route.ordre, "Distance: ",min)
+print("Meilleure route trouvée: ",min_route.ordre, "Distance: ",min, " Iteration: ",iteration)
 print(f"Temps d'exécution {end -start} secondes")
