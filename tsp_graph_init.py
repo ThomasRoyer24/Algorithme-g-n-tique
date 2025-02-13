@@ -134,6 +134,8 @@ class TSP_GA:
         i=0
         nouvelle_population = []
         while len(nouvelle_population) < self.taille_population:
+            if len(selectionnes) < 2:
+                break
             if np.random.rand() < self.prob_croisement:
                 enfants = self.croisement(selectionnes[i], selectionnes[i+1])
                 for enfant in enfants:
@@ -145,7 +147,7 @@ class TSP_GA:
                 # nouvelle_population.append(selectionnes[i])
                 # nouvelle_population.append(selectionnes[i+1])
             i += 2
-            if i == len(selectionnes)-2:
+            if i >= len(selectionnes)-1:
                 i = 0
         return nouvelle_population
 
@@ -279,12 +281,12 @@ class Affichage:
 LARGEUR = 800
 HAUTEUR = 600
 graph = Graph()
-NB_LIEUX = graph.generer_lieux(path='data/graph_20.csv')
+NB_LIEUX = graph.generer_lieux(path='data/graph_5.csv')
 graph.calcul_matrice_cout_od()
 affichage = Affichage(graph)
 
 nb_iterations = 20000
-nb_population = NB_LIEUX*int(np.log(NB_LIEUX))
+nb_population = NB_LIEUX*int(np.log(NB_LIEUX))+80
 print(nb_population)
 n_route = 100
 
